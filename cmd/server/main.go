@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	collections "github.com/yammine/yamex-go/database"
+	"github.com/yammine/yamex-go/adapter"
 
 	f "github.com/fauna/faunadb-go/v4/faunadb"
 	"github.com/gin-gonic/gin"
@@ -26,9 +26,15 @@ func main() {
 	}
 
 	client := f.NewFaunaClient(viper.GetString("FAUNA_SECRET"), f.Endpoint("https://db.us.fauna.com"), f.HTTP(&http.Client{}))
-	// Ensure all the FaunaDB collections are defined.
-	if err := collections.CreateCollections(client); err != nil {
-		log.Fatalf("Error creating collections: %s", err)
+	if err := adapter.InitFaunaDatabase(client); err != nil {
+		log.Fatalf("Error initializing FaunaDB: %s", err)
+	}
+
+	repo := adapter.NewFaunaRepository(client)
+	user, err := repo.GetOrCreateUser("testingasdfasdfasd")
+	fmt.Printf("Fetched user: %+v\n", user)
+	if err != nil {
+		log.Fatalf("error creating user: %s", err)
 	}
 
 	r := gin.Default()
