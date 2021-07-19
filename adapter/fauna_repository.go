@@ -53,5 +53,6 @@ func numericalHash(id string) string {
 	h := fnv.New64()
 	h.Write([]byte(id))
 	s := fmt.Sprint(h.Sum64())
+	// TODO: Don't do this lol, right now it's here because uint64 are too big for Fauna to handle so I'm chopping off the last digit.
 	return s[0:18]
 }
