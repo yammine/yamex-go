@@ -16,10 +16,7 @@ func InitFaunaDatabase(client *f.FaunaClient) error {
 	if err = CreateCollections(client); err != nil {
 		return fmt.Errorf("creating collections: %w", err)
 	}
-	if err = CreateIndices(client); err != nil {
-		return fmt.Errorf("creating indices: %w", err)
-	}
-
+	// Other setup functions here
 	return nil
 }
 
@@ -33,25 +30,6 @@ func CreateCollections(client *f.FaunaClient) error {
 				f.CreateCollection(f.Obj{"name": f.Var("col")}),
 			)),
 		),
-	)
-
-	return err
-}
-
-func CreateIndices(client *f.FaunaClient) error {
-	_, err := client.Query(f.If(
-		f.Exists(f.Index(UsersBySlackUserID)),
-		f.Null(),
-		f.CreateIndex(
-			f.Obj{
-				"name":       UsersBySlackUserID,
-				"source":     f.Collection(UsersCollection),
-				"terms":      f.Arr{f.Obj{"field": f.Arr{"data", "slack_user_id"}}},
-				"unique":     true,
-				"serialized": true,
-			},
-		),
-	),
 	)
 
 	return err
