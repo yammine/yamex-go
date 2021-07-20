@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/yammine/yamex-go/adapter"
 
-	f "github.com/fauna/faunadb-go/v4/faunadb"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -25,17 +25,16 @@ func main() {
 		log.Fatalf("Crashing due to failed config read: %s", err)
 	}
 
-	client := f.NewFaunaClient(viper.GetString("FAUNA_SECRET"), f.Endpoint("https://db.us.fauna.com"), f.HTTP(&http.Client{}))
-	if err := adapter.InitFaunaDatabase(client); err != nil {
-		log.Fatalf("Error initializing FaunaDB: %s", err)
+	// Playing with postgres adapter
+	repo := adapter.NewPostgresRepository(viper.GetString("POSTGRES_DSN"))
+	if err := repo.Migrate(); err != nil {
+		log.Fatalf("failed to migrate db: %s", err)
 	}
-
-	repo := adapter.NewFaunaRepository(client)
-	user, err := repo.GetOrCreateUser("testingasdfasdfasd")
-	fmt.Printf("Fetched user: %+v\n", user)
+	user, err := repo.GetOrCreateUserBySlackID(context.Background(), "new_slack_id2")
 	if err != nil {
-		log.Fatalf("error creating user: %s", err)
+		log.Fatalf("failed GetOrCreateUserBySlackID %s", err)
 	}
+	fmt.Printf("User: %+v\n", user)
 
 	r := gin.Default()
 	r.POST("/events", func(c *gin.Context) {

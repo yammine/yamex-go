@@ -1,1 +1,2 @@
-FAUNA_SECRET: "YOUR_FAUNA_SECRET_HERE"
+# Default development dsn
+POSTGRES_DSN: "host=localhost user=postgres password=example dbname=yamex-dev port=9876 sslmode=disable"

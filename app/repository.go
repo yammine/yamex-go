@@ -1,7 +1,11 @@
 package app
 
-import "github.com/yammine/yamex-go/domain"
+import (
+	"context"
+
+	"github.com/yammine/yamex-go/domain"
+)
 
 type Repository interface {
-	GetOrCreateUser(id string) (*domain.User, error)
+	GetOrCreateUserBySlackID(ctx context.Context, slackUserId string) (*domain.User, error)
 }

@@ -1,6 +1,9 @@
 package domain
 
+import "gorm.io/gorm"
+
 type User struct {
-	ID      string
-	SlackID string `fauna:"slack_user_id"`
+	gorm.Model
+	SlackID  string `gorm:"uniqueIndex"`
+	Accounts []Account
 }
