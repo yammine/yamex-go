@@ -3,12 +3,12 @@ module github.com/yammine/yamex-go
 go 1.16
 
 require (
-	github.com/fauna/faunadb-go/v4 v4.1.0
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.7.0 // indirect
+	github.com/jackc/pgtype v1.8.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
-	github.com/shopspring/decimal v1.2.0 // indirect
+	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/viper v1.8.1
 	github.com/ugorji/go v1.2.6 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect

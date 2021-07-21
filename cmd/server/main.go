@@ -30,11 +30,20 @@ func main() {
 	if err := repo.Migrate(); err != nil {
 		log.Fatalf("failed to migrate db: %s", err)
 	}
-	user, err := repo.GetOrCreateUserBySlackID(context.Background(), "new_slack_id2")
+	user1, err := repo.GetOrCreateUserBySlackID(context.Background(), "slack_user_1")
 	if err != nil {
 		log.Fatalf("failed GetOrCreateUserBySlackID %s", err)
 	}
-	fmt.Printf("User: %+v\n", user)
+	user2, err := repo.GetOrCreateUserBySlackID(context.Background(), "slack_user_2")
+	if err != nil {
+		log.Fatalf("failed GetOrCreateUserBySlackID %s", err)
+	}
+
+	grant, err := repo.GrantCurrency(context.Background(), "$yam", user1.ID, user2.ID)
+	if err != nil {
+		log.Fatalf("failed GrantCurrency %s", err)
+	}
+	log.Printf("Grant created: %+v\n", grant)
 
 	r := gin.Default()
 	r.POST("/events", func(c *gin.Context) {
