@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/yammine/yamex-go/domain"
+	"github.com/yammine/yamex-go/notabankbot/domain"
 )
 
 type Repository interface {

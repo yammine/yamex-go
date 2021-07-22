@@ -11,12 +11,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/yammine/yamex-go/app"
-	"github.com/yammine/yamex-go/port"
-
-	"github.com/yammine/yamex-go/adapter"
-
 	"github.com/spf13/viper"
+
+	"github.com/yammine/yamex-go/notabankbot/adapter"
+	"github.com/yammine/yamex-go/notabankbot/app"
+	"github.com/yammine/yamex-go/notabankbot/port"
 )
 
 type ChallengeReq struct {

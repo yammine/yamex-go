@@ -10,7 +10,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 	"github.com/spf13/viper"
 
-	"github.com/yammine/yamex-go/app"
+	"github.com/yammine/yamex-go/notabankbot/app"
 )
 
 type SlackConsumer struct {

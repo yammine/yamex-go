@@ -7,14 +7,14 @@ import (
 	"log"
 	"time"
 
+	"github.com/yammine/yamex-go/notabankbot/app"
+	"github.com/yammine/yamex-go/notabankbot/domain"
+
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm/clause"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	"github.com/yammine/yamex-go/app"
-	"github.com/yammine/yamex-go/domain"
 )
 
 func NewPostgresRepository(dsn string) *PostgresRepository {
