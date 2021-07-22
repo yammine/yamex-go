@@ -3,12 +3,19 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/yammine/yamex-go/app"
+	"github.com/yammine/yamex-go/port"
 
 	"github.com/yammine/yamex-go/adapter"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
@@ -27,37 +34,47 @@ func main() {
 
 	// Playing with postgres adapter
 	repo := adapter.NewPostgresRepository(viper.GetString("POSTGRES_DSN"))
-	if err := repo.Migrate(); err != nil {
-		log.Fatalf("failed to migrate db: %s", err)
-	}
-	user1, err := repo.GetOrCreateUserBySlackID(context.Background(), "slack_user_1")
-	if err != nil {
-		log.Fatalf("failed GetOrCreateUserBySlackID %s", err)
-	}
-	user2, err := repo.GetOrCreateUserBySlackID(context.Background(), "slack_user_2")
-	if err != nil {
-		log.Fatalf("failed GetOrCreateUserBySlackID %s", err)
-	}
+	fmt.Println(repo)
+	application := &app.Application{}
+	slackConsumer := port.NewSlackConsumer(application)
 
-	grant, err := repo.GrantCurrency(context.Background(), "$yam", user1.ID, user2.ID)
-	if err != nil {
-		log.Fatalf("failed GrantCurrency %s", err)
-	}
-	log.Printf("Grant created: %+v\n", grant)
-
-	r := gin.Default()
-	r.POST("/events", func(c *gin.Context) {
-		var req ChallengeReq
-
-		if err := c.ShouldBindJSON(&req); err != nil {
-			fmt.Println("the error", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		fmt.Println("req", req)
-		c.JSON(http.StatusOK, gin.H{"challenge": req.Challenge})
+	router := mux.NewRouter()
+	router.HandleFunc("/slack/events", slackConsumer.Handler())
+	router.HandleFunc("/test", func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		log.Println(string(body))
+		writer.WriteHeader(200)
+		return
 	})
 
-	r.Run(":3000")
+	srv := &http.Server{
+		Addr:         "0.0.0.0:3000",
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	log.Println("shutting down")
+	os.Exit(0)
 }

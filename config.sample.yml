@@ -1,2 +1,5 @@
 # Default development dsn
 POSTGRES_DSN: "host=localhost user=postgres password=example dbname=yamex-dev port=9876 sslmode=disable"
+# Get this from your installation of the slack app
+SLACK_SIGNING_SECRET: "find this in your app credentials"
+BOT_TOKEN: "find this in app credentials"
