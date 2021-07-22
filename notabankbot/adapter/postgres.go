@@ -59,7 +59,7 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, currency string, 
 			sql.Named("threeDaysAgo", time.Now().Add(-3*24*time.Hour)),
 		).Find(&formerGrant)
 		if result.RowsAffected > 0 {
-			return domain.ErrAlreadyGrantedWithinThreeDays()
+			return domain.ErrAlreadyGrantedWithinThreeDays
 		}
 
 		// Row exclusive lock to ensure we're the only one interacting with this user for the duration of tx

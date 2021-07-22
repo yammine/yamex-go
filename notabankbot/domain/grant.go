@@ -1,9 +1,12 @@
 package domain
 
 import (
-	"errors"
 	"time"
+
+	"github.com/yammine/yamex-go"
 )
+
+const ErrAlreadyGrantedWithinThreeDays = yamex.Sentinel("already granted currency in the past 3 days")
 
 type Grant struct {
 	ID        uint      `gorm:"primarykey"`
@@ -15,8 +18,4 @@ type Grant struct {
 	ToUser     User
 	MovementID uint `gorm:"index"`
 	Movement   Movement
-}
-
-func ErrAlreadyGrantedWithinThreeDays() error {
-	return errors.New("already granted currency in the past 3 days")
 }
