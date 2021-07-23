@@ -82,11 +82,9 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, currency string, 
 		if err := tx.Create(&movement).Error; err != nil {
 			return fmt.Errorf("insert movement: %w", err)
 		}
-		// Apply the movement to the account balance
-		account.UpdateBalance(&movement)
 
 		// Persist new Account.Balance
-		tx.Model(&account).Select("balance").Updates(map[string]interface{}{"balance": account.Balance})
+		tx.Model(&account).Select("balance").Updates(map[string]interface{}{"balance": account.Balance.Add(movement.Amount)})
 
 		grant.FromUserID = fromUserId
 		grant.ToUserID = toUser.ID

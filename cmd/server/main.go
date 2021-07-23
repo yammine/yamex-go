@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -33,8 +32,8 @@ func main() {
 
 	// Playing with postgres adapter
 	repo := adapter.NewPostgresRepository(viper.GetString("POSTGRES_DSN"))
-	fmt.Println(repo)
-	application := &app.Application{}
+	repo.Migrate()
+	application := app.NewApplication(repo)
 	slackConsumer := port.NewSlackConsumer(application)
 
 	router := mux.NewRouter()

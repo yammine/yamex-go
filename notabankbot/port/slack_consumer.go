@@ -27,6 +27,7 @@ func NewSlackConsumer(app *app.Application) *SlackConsumer {
 
 func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -67,24 +68,25 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 			switch ev := innerEvent.Data.(type) {
 			case *slackevents.AppMentionEvent:
 				log.Printf("AppMentionEvent: %+v", ev)
-				response := s.app.ProcessAppMention(&app.BotMention{
+				response := s.app.ProcessAppMention(ctx, &app.BotMention{
 					Platform: "slack",
-					BotID:    ev.BotID,
 					UserID:   ev.User,
 					Text:     ev.Text,
 				})
 
-				_, _, _, err := s.client.SendMessage(
-					ev.Channel,
-					slack.MsgOptionText(response.Text, false),
-					slack.MsgOptionTS(ev.TimeStamp),
-				)
-				if err != nil {
-					log.Printf("Error responding to message: %s", err)
-				}
+				go s.reply(ev, response)
+
 			default:
 
 			}
 		}
 	}
+}
+
+func (s SlackConsumer) reply(ev *slackevents.AppMentionEvent, response app.BotResponse) {
+	s.client.SendMessage(
+		ev.Channel,
+		slack.MsgOptionText(response.Text, false),
+		slack.MsgOptionTS(ev.TimeStamp),
+	)
 }
