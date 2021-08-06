@@ -6,7 +6,7 @@ import (
 	"github.com/yammine/yamex-go"
 )
 
-const ErrAlreadyGrantedWithinThreeDays = yamex.Sentinel("already granted currency in the past 3 days")
+const ErrAlreadyGranted = yamex.Sentinel("already granted currency")
 
 type Grant struct {
 	ID        uint      `gorm:"primarykey"`
@@ -18,4 +18,8 @@ type Grant struct {
 	ToUser     User
 	MovementID uint `gorm:"index"`
 	Movement   Movement
+}
+
+func TimeBetweenGrants() time.Duration {
+	return time.Second * 5
 }

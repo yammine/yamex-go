@@ -34,7 +34,21 @@ func (p PostgresRepository) Migrate() error {
 	return p.DB.AutoMigrate(&domain.User{}, &domain.Account{}, &domain.Movement{}, &domain.Grant{})
 }
 
+func (p PostgresRepository) GetAccountsForUser(ctx context.Context, id uint) ([]*domain.Account, error) {
+	var accounts []*domain.Account
+
+	if err := p.DB.WithContext(ctx).Find(&accounts, domain.Account{UserID: id}).Error; err != nil {
+		return nil, err
+	}
+
+	return accounts, nil
+}
+
 func (p PostgresRepository) GetOrCreateUserBySlackID(ctx context.Context, slackUserId string) (*domain.User, error) {
+	// Guard against bunk input, should probably move this up to the port/app
+	if slackUserId == "" {
+		return nil, app.ErrCannotFindOrCreateUser
+	}
 	user := domain.User{
 		SlackID: slackUserId,
 	}
@@ -44,32 +58,32 @@ func (p PostgresRepository) GetOrCreateUserBySlackID(ctx context.Context, slackU
 	return &user, tx.Error
 }
 
-func (p PostgresRepository) GrantCurrency(ctx context.Context, currency string, fromUserId, toUserId uint) (*domain.Grant, error) {
+func (p PostgresRepository) GrantCurrency(ctx context.Context, input app.GrantCurrencyInput) (*domain.Grant, error) {
 	var grant domain.Grant
 	err := p.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		fromUser, err := getUserExclusive(tx, fromUserId)
+		fromUser, err := getUserExclusive(tx, input.FromUserID)
 		if err != nil {
 			return fmt.Errorf("from user: %w", err)
 		}
-		// Check to see if the granting user has granted in the past 3 days
+		// Check to see if the granting user has granted in the past duration
 		var formerGrant domain.Grant
 		result := tx.Where(
-			"from_user_id = @fromUserId AND created_at >= @threeDaysAgo",
+			"from_user_id = @fromUserId AND created_at >= @threshold",
 			sql.Named("fromUserId", fromUser.ID),
-			sql.Named("threeDaysAgo", time.Now().Add(-3*24*time.Hour)),
+			sql.Named("threshold", time.Now().Add(-domain.TimeBetweenGrants())),
 		).Find(&formerGrant)
 		if result.RowsAffected > 0 {
-			return domain.ErrAlreadyGrantedWithinThreeDays
+			return domain.ErrAlreadyGranted
 		}
 
 		// Row exclusive lock to ensure we're the only one interacting with this user for the duration of tx
-		toUser, err := getUserExclusive(tx, toUserId)
+		toUser, err := getUserExclusive(tx, input.ToUserID)
 		if err != nil {
 			return fmt.Errorf("to user: %w", err)
 		}
 
 		// Fetch or create an account for this currency
-		account := domain.Account{Currency: currency, UserID: toUserId}
+		account := domain.Account{Currency: input.Currency, UserID: input.ToUserID}
 		if err := tx.FirstOrCreate(&account, account).Error; err != nil {
 			return fmt.Errorf("fetching account: %w", err)
 		}
@@ -78,6 +92,7 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, currency string, 
 		movement := domain.Movement{
 			AccountID: account.ID,
 			Amount:    decimal.NewFromFloat(1.0),
+			Reason:    input.Note,
 		}
 		if err := tx.Create(&movement).Error; err != nil {
 			return fmt.Errorf("insert movement: %w", err)
@@ -86,7 +101,7 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, currency string, 
 		// Persist new Account.Balance
 		tx.Model(&account).Select("balance").Updates(map[string]interface{}{"balance": account.Balance.Add(movement.Amount)})
 
-		grant.FromUserID = fromUserId
+		grant.FromUserID = input.FromUserID
 		grant.ToUserID = toUser.ID
 		grant.MovementID = movement.ID
 		if err := tx.Create(&grant).Error; err != nil {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,12 +37,6 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
-	router.HandleFunc("/test", func(writer http.ResponseWriter, request *http.Request) {
-		body, _ := io.ReadAll(request.Body)
-		log.Println(string(body))
-		writer.WriteHeader(200)
-		return
-	})
 
 	srv := &http.Server{
 		Addr:         "0.0.0.0:3000",

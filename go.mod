@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgtype v1.8.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/slack-go/slack v0.9.3 // indirect
 	github.com/spf13/viper v1.8.1
