@@ -3,10 +3,11 @@ package port
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/spf13/viper"
@@ -116,7 +117,13 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 			innerEvent := eventsAPIEvent.InnerEvent
 			switch ev := innerEvent.Data.(type) {
 			case *slackevents.AppMentionEvent:
-				log.Printf("AppMentionEvent: %+v", ev)
+				log.Debug().Dict(
+					"AppMentionEvent",
+					zerolog.Dict().
+						Str("type", ev.Type).
+						Str("user", ev.User).
+						Str("text", ev.Text),
+				).Msg("event received")
 				response := s.ProcessAppMention(ctx, &BotMention{
 					Platform: "slack",
 					UserID:   ev.User,

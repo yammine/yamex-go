@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/gorilla/mux"
+	_ "github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
 	"github.com/yammine/yamex-go/notabankbot/adapter"
@@ -16,17 +19,17 @@ import (
 	"github.com/yammine/yamex-go/notabankbot/port"
 )
 
-type ChallengeReq struct {
-	Challenge string `json:"challenge"`
-}
+const ServiceName = "yamex"
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	viper.AutomaticEnv()
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	viper.AddConfigPath(".")
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Crashing due to failed config read: %s", err)
+		log.Fatal().Err(err).Str("service", ServiceName).Msgf("cannot start %s", ServiceName)
 	}
 
 	// Playing with postgres adapter
@@ -48,7 +51,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Fatal(err)
+			log.Fatal().Err(err).Str("service", ServiceName).Msg("error starting http listener")
 		}
 	}()
 
@@ -66,6 +69,6 @@ func main() {
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
 	srv.Shutdown(ctx)
-	log.Println("shutting down")
+	log.Info().Msg("Shutting down")
 	os.Exit(0)
 }
