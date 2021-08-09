@@ -8,40 +8,6 @@ import (
 	"github.com/yammine/yamex-go/notabankbot/domain"
 )
 
-const (
-	// Top Level expressions
-
-	CommandExpression    = "(?P<bot_id><@[A-Z0-9]{11}>)(?P<command>.+)(?P<recipient_id><@[A-Z0-9]{11}>)(?P<note>.*)"
-	GetBalanceExpression = "(?P<bot_id><@[A-Z0-9]{11}>)[[:space:]](balance|my[[:space:]]balance)"
-
-	// Sub-command expressions
-
-	GrantCurrencyExpression = "grant[[:space:]]*(?P<currency>[$A-Za-z]+).*"
-
-	// Command names
-
-	GetBalanceCmd = "GetBalance"
-	CommandCmd    = "Command"
-
-	// Sub-command Names
-
-	GrantCurrencyCmd = "GrantCurrency"
-
-	// Responses
-
-	GenericResponse      = "I don't understand what you're asking me :face_with_head_bandage:"
-	GenericErrorResponse = "I seem to be experiencing an unexpected error :robot_face:"
-
-	AlreadyGrantedCurrency = "Oops! Looks like you've already granted currency recently. Try again later :simple_smile:"
-
-	// Capture Keys
-
-	ckRecipientID = "recipient_id"
-	ckCurrency    = "currency"
-	ckNote        = "note"
-	ckCommand     = "command"
-)
-
 type Application struct {
 	repo Repository
 }
