@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.7.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/jackc/pgtype v1.8.0 // indirect
+	github.com/jdkato/prose/v2 v2.0.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect

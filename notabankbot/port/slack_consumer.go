@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -13,15 +14,63 @@ import (
 	"github.com/yammine/yamex-go/notabankbot/app"
 )
 
+const (
+	// Top Level expressions
+
+	CommandExpression    = "(?P<bot_id><@[A-Z0-9]{11}>)(?P<command>.+)(?P<recipient_id><@[A-Z0-9]{11}>)(?P<note>.*)"
+	GetBalanceExpression = "(?P<bot_id><@[A-Z0-9]{11}>)[[:space:]](balance|my[[:space:]]balance)"
+
+	// Sub-command expressions
+
+	GrantCurrencyExpression = "grant[[:space:]]*(?P<currency>[$A-Za-z]+).*"
+
+	// Command names
+
+	GetBalanceCmd = "GetBalance"
+	CommandCmd    = "Command"
+
+	// Sub-command Names
+
+	GrantCurrencyCmd = "GrantCurrency"
+
+	// Responses
+
+	GenericResponse      = "I don't understand what you're asking me :face_with_head_bandage:"
+	GenericErrorResponse = "I seem to be experiencing an unexpected error :robot_face:"
+
+	AlreadyGrantedCurrency = "Oops! Looks like you've already granted currency recently. Try again later :simple_smile:"
+
+	// Capture Keys
+
+	ckRecipientID = "recipient_id"
+	ckCurrency    = "currency"
+	ckNote        = "note"
+	ckCommand     = "command"
+)
+
 type SlackConsumer struct {
 	app    *app.Application
 	client *slack.Client
+
+	expressions           map[string]*regexp.Regexp
+	subCommandExpressions map[string]*regexp.Regexp
 }
 
 func NewSlackConsumer(app *app.Application) *SlackConsumer {
+	top := map[string]*regexp.Regexp{
+		CommandCmd:    regexp.MustCompile(CommandExpression),
+		GetBalanceCmd: regexp.MustCompile(GetBalanceExpression),
+	}
+
+	sub := map[string]*regexp.Regexp{
+		GrantCurrencyCmd: regexp.MustCompile(GrantCurrencyExpression),
+	}
+
 	return &SlackConsumer{
-		app:    app,
-		client: slack.New(viper.GetString("BOT_USER_OAUTH_TOKEN")),
+		app:                   app,
+		client:                slack.New(viper.GetString("BOT_USER_OAUTH_TOKEN")),
+		expressions:           top,
+		subCommandExpressions: sub,
 	}
 }
 
@@ -68,7 +117,7 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 			switch ev := innerEvent.Data.(type) {
 			case *slackevents.AppMentionEvent:
 				log.Printf("AppMentionEvent: %+v", ev)
-				response := s.app.ProcessAppMention(ctx, &app.BotMention{
+				response := s.ProcessAppMention(ctx, &BotMention{
 					Platform: "slack",
 					UserID:   ev.User,
 					Text:     ev.Text,
@@ -83,7 +132,7 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s SlackConsumer) reply(ev *slackevents.AppMentionEvent, response app.BotResponse) {
+func (s SlackConsumer) reply(ev *slackevents.AppMentionEvent, response BotResponse) {
 	s.client.SendMessage(
 		ev.Channel,
 		slack.MsgOptionText(response.Text, false),
