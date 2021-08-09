@@ -38,9 +38,8 @@ type GrantCurrencyFuncIn struct {
 }
 
 type GrantCurrencyFuncOut struct {
-	Movement       *domain.Movement
-	Grant          *domain.Grant
-	UpdatedAccount *domain.Account
+	Movement *domain.Movement
+	Grant    *domain.Grant
 }
 
 // SendCurrency

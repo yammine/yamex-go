@@ -32,9 +32,7 @@ func (a *Account) Debit(amount decimal.Decimal, reason string) (*Movement, error
 		return nil, ErrAmountCannotBeNegative
 	}
 
-	fmt.Printf("Account %+v\n", a)
 	newBalance := a.Balance.Sub(amount)
-	fmt.Printf("New balance: %s", newBalance.String())
 	if newBalance.IsNegative() {
 		return nil, ErrInsufficientBalance
 	}

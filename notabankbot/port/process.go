@@ -104,7 +104,7 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 					return GenericErrorResponse
 				}
 
-				return fmt.Sprintf("Success! Granted 1 %s to %s. Spend it wisely :sunglasses:", captures[ckCurrency], captures[ckRecipientID])
+				return fmt.Sprintf("Success! Granted 1 `%s` to %s. Spend it wisely :sunglasses:", captures[ckCurrency], captures[ckRecipientID])
 			case SendCurrencyCmd:
 				amount, err := decimal.NewFromString(captures[ckAmount])
 				if err != nil {
@@ -122,10 +122,10 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 				})
 
 				if err != nil {
-					log.Error().Err(err).Object("context", m).Msg("Error during transfer")
+					log.Error().Err(err).Object("context", m).Str("amount", amount.String()).Msg("Error during transfer")
 					return GenericErrorResponse
 				}
-				return fmt.Sprintf("Success! Sent %s %s to %s for reason: `%s`.\n\nThanks for using yamex!", amount.String(), captures[ckCurrency], captures[ckRecipientID], strings.TrimSpace(captures[ckNote]))
+				return fmt.Sprintf("Success! Sent %s `%s` to %s for reason: `%s`.\n\nThanks for using yamex!", amount.String(), captures[ckCurrency], captures[ckRecipientID], strings.TrimSpace(captures[ckNote]))
 			default:
 				log.Error().Object("context", m).Str("name", name).Str("command", command).Msg("Could not match command")
 				return GenericResponse

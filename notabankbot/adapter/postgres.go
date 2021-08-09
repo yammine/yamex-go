@@ -68,6 +68,7 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, input *app.GrantC
 			return fmt.Errorf("get receiver account exclusive: %w", txErr)
 		}
 
+		// Creates appropriate entities and updates account balance.
 		out, txErr := grantFn(ctx, &app.GrantCurrencyFuncIn{
 			From:      from,
 			To:        input.To,
@@ -78,7 +79,7 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, input *app.GrantC
 		}
 
 		// Save the updated account balance
-		if saveAccountErr := tx.Save(out.UpdatedAccount).Error; saveAccountErr != nil {
+		if saveAccountErr := tx.Save(account).Error; saveAccountErr != nil {
 			return fmt.Errorf("saving updated account: %w", saveAccountErr)
 		}
 

@@ -45,13 +45,11 @@ func (a Application) Grant(ctx context.Context, in *GrantInput) (*domain.Grant, 
 				return nil, domain.ErrAlreadyGranted
 			}
 			g := domain.NewGrant(gin.From, gin.To)
-			m := domain.NewMovement(gin.ToAccount, decimal.New(1, 0), in.Note)
-			gin.ToAccount.ApplyNewMovement(m)
+			m, _ := gin.ToAccount.Credit(decimal.New(1, 0), in.Note)
 
 			return &GrantCurrencyFuncOut{
-				Grant:          g,
-				Movement:       m,
-				UpdatedAccount: gin.ToAccount,
+				Grant:    g,
+				Movement: m,
 			}, nil
 		})
 
