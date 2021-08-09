@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/rs/zerolog"
 
 	"github.com/yammine/yamex-go/notabankbot/domain"
@@ -103,6 +105,27 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 				}
 
 				return fmt.Sprintf("Success! Granted 1 %s to %s. Spend it wisely :sunglasses:", captures[ckCurrency], captures[ckRecipientID])
+			case SendCurrencyCmd:
+				amount, err := decimal.NewFromString(captures[ckAmount])
+				if err != nil {
+					log.Error().Err(err).Object("context", m).Msg("could not parse amount from message")
+					return GenericErrorResponse
+				}
+
+				err = s.app.Transfer(ctx, &app.TransferInput{
+					SenderID:   cleanSlackUserID(m.UserID),
+					ReceiverID: cleanSlackUserID(captures[ckRecipientID]),
+					Platform:   "slack",
+					Currency:   captures[ckCurrency],
+					Note:       captures[ckNote],
+					Amount:     amount,
+				})
+
+				if err != nil {
+					log.Error().Err(err).Object("context", m).Msg("Error during transfer")
+					return GenericErrorResponse
+				}
+				return fmt.Sprintf("Success! Sent %s %s to %s for reason: `%s`.\n\nThanks for using yamex!", amount.String(), captures[ckCurrency], captures[ckRecipientID], strings.TrimSpace(captures[ckNote]))
 			default:
 				log.Error().Object("context", m).Str("name", name).Str("command", command).Msg("Could not match command")
 				return GenericResponse

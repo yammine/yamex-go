@@ -25,6 +25,7 @@ const (
 
 	GrantCurrencyExpression = "grant[[:space:]]*(?P<currency>[$A-Za-z]+).*"
 	GetBalanceForExpression = "(get balance|balance for).*"
+	SendCurrencyExpression  = "send[[:space:]]+(?P<amount>[-+]?[0-9]*\\.?[0-9]*)[[:space:]]+(?P<currency>[$A-Za-z]+)"
 
 	// Command names
 
@@ -35,6 +36,7 @@ const (
 
 	GrantCurrencyCmd = "GrantCurrency"
 	GetBalanceForCmd = "GetBalanceFor"
+	SendCurrencyCmd  = "SendCurrency"
 
 	// Responses
 
@@ -49,6 +51,7 @@ const (
 	ckCurrency    = "currency"
 	ckNote        = "note"
 	ckCommand     = "command"
+	ckAmount      = "amount"
 )
 
 type SlackConsumer struct {
@@ -68,6 +71,7 @@ func NewSlackConsumer(app *app.Application) *SlackConsumer {
 	sub := map[string]*regexp.Regexp{
 		GrantCurrencyCmd: regexp.MustCompile(GrantCurrencyExpression),
 		GetBalanceForCmd: regexp.MustCompile(GetBalanceForExpression),
+		SendCurrencyCmd:  regexp.MustCompile(SendCurrencyExpression),
 	}
 
 	return &SlackConsumer{

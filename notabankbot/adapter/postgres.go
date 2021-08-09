@@ -98,6 +98,43 @@ func (p PostgresRepository) GrantCurrency(ctx context.Context, input *app.GrantC
 	return grant, err
 }
 
+func (p PostgresRepository) SendCurrency(ctx context.Context, in *app.SendCurrencyInput, sendFn app.SendFunc) error {
+	return p.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		sender, txErr := getAccountExclusive(tx, in.From.ID, in.Currency)
+		if txErr != nil {
+			return fmt.Errorf("get sender account exclusive: %w", txErr)
+		}
+
+		receiver, txErr := getAccountExclusive(tx, in.To.ID, in.Currency)
+		if txErr != nil {
+			return fmt.Errorf("get receiver account exclusive: %w", txErr)
+		}
+
+		out, txErr := sendFn(ctx, &app.SendCurrencyFuncIn{
+			FromAccount: sender,
+			ToAccount:   receiver,
+		})
+
+		if txErr != nil {
+			return fmt.Errorf("business logic: %w", txErr)
+		}
+
+		if updateSenderErr := tx.Save(sender).Error; updateSenderErr != nil {
+			return fmt.Errorf("updating sender account: %w", updateSenderErr)
+		}
+
+		if updateReceiverErr := tx.Save(receiver).Error; updateReceiverErr != nil {
+			return fmt.Errorf("updating receiver account: %w", updateReceiverErr)
+		}
+
+		if insertMovementsErr := tx.Create([]*domain.Movement{out.SendingMovement, out.ReceivingMovement}).Error; insertMovementsErr != nil {
+			fmt.Errorf("insert movements: %w", insertMovementsErr)
+		}
+
+		return nil
+	})
+}
+
 var _ app.Repository = (*PostgresRepository)(nil)
 
 func getUserExclusive(tx *gorm.DB, id uint) (*domain.User, error) {

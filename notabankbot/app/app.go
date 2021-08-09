@@ -62,6 +62,46 @@ func (a Application) Grant(ctx context.Context, in *GrantInput) (*domain.Grant, 
 	return grant, nil
 }
 
+type TransferInput struct {
+	SenderID   string
+	ReceiverID string
+	Platform   string
+	Currency   string
+	Amount     decimal.Decimal
+	Note       string
+}
+
+func (a Application) Transfer(ctx context.Context, input *TransferInput) error {
+	sender, err := a.repo.GetOrCreateUserBySlackID(ctx, input.SenderID)
+	if err != nil {
+		return fmt.Errorf("fetching sender: %w", err)
+	}
+	receiver, err := a.repo.GetOrCreateUserBySlackID(ctx, input.ReceiverID)
+	if err != nil {
+		return fmt.Errorf("fetching receiver: %w", err)
+	}
+
+	return a.repo.SendCurrency(ctx,
+		&SendCurrencyInput{
+			From:     sender,
+			To:       receiver,
+			Currency: input.Currency,
+		}, func(ctx context.Context, in *SendCurrencyFuncIn) (*SendCurrencyFuncOut, error) {
+			// debit the sender
+			debit, err := in.FromAccount.Debit(input.Amount, input.Note)
+			if err != nil {
+				return nil, err
+			}
+			// credit the receiver
+			credit, _ := in.ToAccount.Credit(input.Amount, input.Note)
+
+			return &SendCurrencyFuncOut{
+				SendingMovement:   debit,
+				ReceivingMovement: credit,
+			}, nil
+		})
+}
+
 type GetBalanceInput struct {
 	UserID string
 }

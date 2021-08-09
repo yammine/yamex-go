@@ -13,13 +13,17 @@ const (
 )
 
 type GrantFunc = func(ctx context.Context, in *GrantCurrencyFuncIn) (*GrantCurrencyFuncOut, error)
+type SendFunc = func(ctx context.Context, in *SendCurrencyFuncIn) (*SendCurrencyFuncOut, error)
 
 type Repository interface {
 	GrantCurrency(ctx context.Context, in *GrantCurrencyInput, grantFn GrantFunc) (*domain.Grant, error)
+	SendCurrency(ctx context.Context, in *SendCurrencyInput, sendFn SendFunc) error
 
 	GetOrCreateUserBySlackID(ctx context.Context, slackUserId string) (*domain.User, error)
 	GetAccountsForUser(ctx context.Context, id uint) ([]*domain.Account, error)
 }
+
+// GrantCurrency
 
 type GrantCurrencyInput struct {
 	From     *domain.User
@@ -37,4 +41,22 @@ type GrantCurrencyFuncOut struct {
 	Movement       *domain.Movement
 	Grant          *domain.Grant
 	UpdatedAccount *domain.Account
+}
+
+// SendCurrency
+
+type SendCurrencyInput struct {
+	From     *domain.User
+	To       *domain.User
+	Currency string
+}
+
+type SendCurrencyFuncIn struct {
+	FromAccount *domain.Account
+	ToAccount   *domain.Account
+}
+
+type SendCurrencyFuncOut struct {
+	SendingMovement   *domain.Movement
+	ReceivingMovement *domain.Movement
 }
