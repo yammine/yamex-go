@@ -24,6 +24,7 @@ const (
 	// Sub-command expressions
 
 	GrantCurrencyExpression = "grant[[:space:]]*(?P<currency>[$A-Za-z]+).*"
+	GetBalanceForExpression = "(get balance|balance for).*"
 
 	// Command names
 
@@ -33,6 +34,7 @@ const (
 	// Sub-command Names
 
 	GrantCurrencyCmd = "GrantCurrency"
+	GetBalanceForCmd = "GetBalanceFor"
 
 	// Responses
 
@@ -65,6 +67,7 @@ func NewSlackConsumer(app *app.Application) *SlackConsumer {
 
 	sub := map[string]*regexp.Regexp{
 		GrantCurrencyCmd: regexp.MustCompile(GrantCurrencyExpression),
+		GetBalanceForCmd: regexp.MustCompile(GetBalanceForExpression),
 	}
 
 	return &SlackConsumer{

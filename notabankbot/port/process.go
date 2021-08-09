@@ -47,7 +47,7 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 			case CommandCmd:
 				response = s.processCommand(ctx, m, captures)
 			case GetBalanceCmd:
-				response = s.processGetBalanceQuery(ctx, m)
+				response = s.processGetBalanceQuery(ctx, m.UserID)
 			}
 
 			return BotResponse{Text: response}
@@ -58,30 +58,16 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 	return BotResponse{Text: GenericResponse}
 }
 
-func (s SlackConsumer) processGetBalanceQuery(ctx context.Context, m *BotMention) string {
-	accounts, err := s.app.GetBalance(ctx, &app.GetBalanceInput{UserID: m.UserID})
+func (s SlackConsumer) processGetBalanceQuery(ctx context.Context, slackUserID string) string {
+	accounts, err := s.app.GetBalance(ctx, &app.GetBalanceInput{UserID: slackUserID})
 	if err != nil {
-		log.Error().Object("context", m).Err(err).Msg("Error processing GetBalance query")
+		log.Error().Err(err).Msg("Error processing GetBalance query")
 		return GenericErrorResponse
 	}
 
-	tableData := make([][]string, len(accounts))
-	for i := range accounts {
-		acc := accounts[i]
-		tableData[i] = []string{fmt.Sprint(acc.ID), acc.Currency, acc.Balance.StringFixed(8)}
-	}
+	accountsTable := renderAccounts(accounts)
 
-	buf := bytes.NewBuffer([]byte{})
-	table := tablewriter.NewWriter(buf)
-	table.SetHeader([]string{"Account ID", "Currency", "Balance"})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-
-	for _, v := range tableData {
-		table.Append(v)
-	}
-	table.Render()
-
-	return fmt.Sprintf("Here are your account balances:\n```%s```", buf.String())
+	return fmt.Sprintf("Here are your account balances:\n```%s```", accountsTable)
 }
 
 func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captures map[string]string) string {
@@ -97,6 +83,8 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 
 			// Find out which func to call
 			switch name {
+			case GetBalanceForCmd:
+				return s.processGetBalanceQuery(ctx, cleanSlackUserID(captures[ckRecipientID]))
 			case GrantCurrencyCmd:
 				_, err := s.app.Grant(ctx, &app.GrantInput{
 					GranterID:  cleanSlackUserID(m.UserID),
@@ -124,6 +112,26 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 
 	log.Error().Str("command", command).Object("context", m).Msg("Could not match command")
 	return GenericResponse
+}
+
+func renderAccounts(accounts []*domain.Account) string {
+	tableData := make([][]string, len(accounts))
+	for i := range accounts {
+		acc := accounts[i]
+		tableData[i] = []string{fmt.Sprint(acc.ID), acc.Currency, acc.Balance.StringFixed(8)}
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	table := tablewriter.NewWriter(buf)
+	table.SetHeader([]string{"Account ID", "Currency", "Balance"})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _, v := range tableData {
+		table.Append(v)
+	}
+	table.Render()
+
+	return buf.String()
 }
 
 func cleanSlackUserID(id string) string {
