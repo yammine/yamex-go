@@ -15,6 +15,6 @@ type Account struct {
 	Movements []Movement
 }
 
-func (a Account) UpdateBalance(m *Movement) {
+func (a *Account) ApplyNewMovement(m *Movement) {
 	a.Balance = a.Balance.Add(m.Amount)
 }

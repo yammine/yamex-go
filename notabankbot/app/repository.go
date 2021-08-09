@@ -12,15 +12,29 @@ const (
 	ErrCannotFindOrCreateUser = yamex.Sentinel("cannot find or create user")
 )
 
+type GrantFunc = func(ctx context.Context, in *GrantCurrencyFuncIn) (*GrantCurrencyFuncOut, error)
+
 type Repository interface {
+	GrantCurrency(ctx context.Context, in *GrantCurrencyInput, grantFn GrantFunc) (*domain.Grant, error)
+
 	GetOrCreateUserBySlackID(ctx context.Context, slackUserId string) (*domain.User, error)
-	GrantCurrency(ctx context.Context, input GrantCurrencyInput) (*domain.Grant, error)
 	GetAccountsForUser(ctx context.Context, id uint) ([]*domain.Account, error)
 }
 
 type GrantCurrencyInput struct {
-	Currency   string
-	FromUserID uint
-	ToUserID   uint
-	Note       string
+	From     *domain.User
+	To       *domain.User
+	Currency string
+}
+
+type GrantCurrencyFuncIn struct {
+	From      *domain.User
+	To        *domain.User
+	ToAccount *domain.Account
+}
+
+type GrantCurrencyFuncOut struct {
+	Movement       *domain.Movement
+	Grant          *domain.Grant
+	UpdatedAccount *domain.Account
 }

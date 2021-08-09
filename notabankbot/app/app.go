@@ -3,7 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
-	"strings"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/yammine/yamex-go/notabankbot/domain"
 )
@@ -31,21 +32,33 @@ func (a Application) Grant(ctx context.Context, in *GrantInput) (*domain.Grant, 
 	if err != nil {
 		return nil, fmt.Errorf("fetching sender: %w", err)
 	}
-	recipient, err := a.repo.GetOrCreateUserBySlackID(ctx, in.ReceiverID)
+	receiver, err := a.repo.GetOrCreateUserBySlackID(ctx, in.ReceiverID)
 	if err != nil {
 		return nil, fmt.Errorf("fetching receiver: %w", err)
 	}
 
-	input := GrantCurrencyInput{
-		Currency:   in.Currency,
-		FromUserID: granter.ID,
-		ToUserID:   recipient.ID,
-		Note:       strings.TrimSpace(in.Note),
-	}
-	grant, err := a.repo.GrantCurrency(ctx, input)
+	grant, err := a.repo.GrantCurrency(
+		ctx,
+		&GrantCurrencyInput{From: granter, To: receiver, Currency: in.Currency},
+		func(ctx context.Context, gin *GrantCurrencyFuncIn) (*GrantCurrencyFuncOut, error) {
+			if !gin.From.CanGrantCurrency() {
+				return nil, domain.ErrAlreadyGranted
+			}
+			g := domain.NewGrant(gin.From, gin.To)
+			m := domain.NewMovement(gin.ToAccount, decimal.New(1, 0), in.Note)
+			gin.ToAccount.ApplyNewMovement(m)
+
+			return &GrantCurrencyFuncOut{
+				Grant:          g,
+				Movement:       m,
+				UpdatedAccount: gin.ToAccount,
+			}, nil
+		})
+
 	if err != nil {
 		return nil, fmt.Errorf("repo.GrantCurrency: %w", err)
 	}
+
 	return grant, nil
 }
 

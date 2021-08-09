@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"github.com/yammine/yamex-go/notabankbot/app"
 	"github.com/yammine/yamex-go/notabankbot/domain"
 
-	"github.com/shopspring/decimal"
 	"gorm.io/gorm/clause"
 
 	"gorm.io/driver/postgres"
@@ -58,60 +56,46 @@ func (p PostgresRepository) GetOrCreateUserBySlackID(ctx context.Context, slackU
 	return &user, tx.Error
 }
 
-func (p PostgresRepository) GrantCurrency(ctx context.Context, input app.GrantCurrencyInput) (*domain.Grant, error) {
-	var grant domain.Grant
+func (p PostgresRepository) GrantCurrency(ctx context.Context, input *app.GrantCurrencyInput, grantFn app.GrantFunc) (*domain.Grant, error) {
+	var grant *domain.Grant
 	err := p.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		fromUser, err := getUserExclusive(tx, input.FromUserID)
-		if err != nil {
-			return fmt.Errorf("from user: %w", err)
+		from, txErr := getUserExclusive(tx, input.From.ID)
+		if txErr != nil {
+			return fmt.Errorf("get sender user exclusive: %w", txErr)
 		}
-		// Check to see if the granting user has granted in the past duration
-		var formerGrant domain.Grant
-		result := tx.Where(
-			"from_user_id = @fromUserId AND created_at >= @threshold",
-			sql.Named("fromUserId", fromUser.ID),
-			sql.Named("threshold", time.Now().Add(-domain.TimeBetweenGrants())),
-		).Find(&formerGrant)
-		if result.RowsAffected > 0 {
-			return domain.ErrAlreadyGranted
+		account, txErr := getAccountExclusive(tx, input.To.ID, input.Currency)
+		if txErr != nil {
+			return fmt.Errorf("get receiver account exclusive: %w", txErr)
 		}
 
-		// Row exclusive lock to ensure we're the only one interacting with this user for the duration of tx
-		toUser, err := getUserExclusive(tx, input.ToUserID)
-		if err != nil {
-			return fmt.Errorf("to user: %w", err)
+		out, txErr := grantFn(ctx, &app.GrantCurrencyFuncIn{
+			From:      from,
+			To:        input.To,
+			ToAccount: account,
+		})
+		if txErr != nil {
+			return fmt.Errorf("business logic error: %w", txErr)
 		}
 
-		// Fetch or create an account for this currency
-		account := domain.Account{Currency: input.Currency, UserID: input.ToUserID}
-		if err := tx.FirstOrCreate(&account, account).Error; err != nil {
-			return fmt.Errorf("fetching account: %w", err)
+		// Save the updated account balance
+		if saveAccountErr := tx.Save(out.UpdatedAccount).Error; saveAccountErr != nil {
+			return fmt.Errorf("saving updated account: %w", saveAccountErr)
 		}
 
-		// Insert Movement
-		movement := domain.Movement{
-			AccountID: account.ID,
-			Amount:    decimal.NewFromFloat(1.0),
-			Reason:    input.Note,
-		}
-		if err := tx.Create(&movement).Error; err != nil {
-			return fmt.Errorf("insert movement: %w", err)
+		if insertMovementErr := tx.Create(out.Movement).Error; insertMovementErr != nil {
+			return fmt.Errorf("inserting movement: %w", insertMovementErr)
 		}
 
-		// Persist new Account.Balance
-		tx.Model(&account).Select("balance").Updates(map[string]interface{}{"balance": account.Balance.Add(movement.Amount)})
-
-		grant.FromUserID = input.FromUserID
-		grant.ToUserID = toUser.ID
-		grant.MovementID = movement.ID
-		if err := tx.Create(&grant).Error; err != nil {
-			return fmt.Errorf("insert grant: %w", err)
+		// Associate the newly inserted movement with the grant.
+		out.Grant.MovementID = out.Movement.ID
+		if insertGrantErr := tx.Create(out.Grant).Error; insertGrantErr != nil {
+			return fmt.Errorf("inserting grant: %w", insertGrantErr)
 		}
 
 		return nil
 	})
 
-	return &grant, err
+	return grant, err
 }
 
 var _ app.Repository = (*PostgresRepository)(nil)
@@ -119,10 +103,23 @@ var _ app.Repository = (*PostgresRepository)(nil)
 func getUserExclusive(tx *gorm.DB, id uint) (*domain.User, error) {
 	var user domain.User
 
-	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, id).Error
+	err := tx.
+		Preload("RecentlyGivenGrants", "created_at >= ?", time.Now().Add(-domain.TimeBetweenGrants())).
+		Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, id).
+		Error
 	if err != nil {
 		return nil, fmt.Errorf("fetching user: %w", err)
 	}
 
 	return &user, nil
+}
+
+func getAccountExclusive(tx *gorm.DB, id uint, currency string) (*domain.Account, error) {
+	var account *domain.Account
+	txErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).FirstOrCreate(&account, domain.Account{UserID: id, Currency: currency}).Error
+	if txErr != nil {
+		return nil, fmt.Errorf("get account: %w", txErr)
+	}
+
+	return account, nil
 }

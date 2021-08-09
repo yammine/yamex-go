@@ -20,6 +20,13 @@ type Grant struct {
 	Movement   Movement
 }
 
+func NewGrant(from, to *User) *Grant {
+	return &Grant{
+		FromUserID: from.ID,
+		ToUserID:   to.ID,
+	}
+}
+
 func TimeBetweenGrants() time.Duration {
-	return time.Second * 5
+	return 10 * time.Second
 }
