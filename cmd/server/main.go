@@ -8,6 +8,9 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/slack-go/slack"
+
 	"github.com/rs/zerolog"
 
 	"github.com/gorilla/mux"
@@ -44,7 +47,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
-	router.HandleFunc("/slack/oauth", OAuthRedirectHandler(repo))
+	router.HandleFunc("/slack/oauth", oAuthRedirectHandler(repo))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", viper.GetInt("PORT")),
@@ -76,4 +79,25 @@ func main() {
 	srv.Shutdown(ctx)
 	log.Info().Msg("Shutting down")
 	os.Exit(0)
+}
+
+func oAuthRedirectHandler(repo app.Repository) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		oauthResp, err := slack.GetOAuthV2Response(client, viper.GetString("SLACK_CLIENT_ID"), viper.GetString("SLACK_CLIENT_SECRET"), code, viper.GetString("SLACK_REDIRECT_URI"))
+		spew.Dump(oauthResp)
+		if err != nil {
+			// TODO: something
+		}
+
+		// Persist the token & team ID, so we can use them later when responding to mentions
+		if err := repo.SaveCredentials(r.Context(), oauthResp.Team.ID, oauthResp.AccessToken); err != nil {
+			// TODO: something
+		}
+
+		w.WriteHeader(200)
+		return
+	}
 }
