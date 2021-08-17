@@ -85,6 +85,7 @@ func main() {
 func oAuthRedirectHandler(repo app.Repository) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
+		log.Info().Str("code", code).Msg("Code from query params")
 
 		client := &http.Client{Timeout: 5 * time.Second}
 		oauthResp, err := slack.GetOAuthV2Response(client, viper.GetString("SLACK_CLIENT_ID"), viper.GetString("SLACK_CLIENT_SECRET"), code, viper.GetString("SLACK_REDIRECT_URI"))

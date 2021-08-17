@@ -137,7 +137,8 @@ func (p PostgresRepository) SendCurrency(ctx context.Context, in *app.SendCurren
 }
 
 func (p PostgresRepository) SaveCredentials(ctx context.Context, workspaceID, token string) error {
-	panic("implement me")
+	// TODO: Implement me
+	return nil
 }
 
 var _ app.Repository = (*PostgresRepository)(nil)
