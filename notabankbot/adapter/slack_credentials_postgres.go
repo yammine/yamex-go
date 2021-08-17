@@ -39,7 +39,7 @@ func (s SlackCredentialPostgres) Migrate() error {
 }
 
 func (s SlackCredentialPostgres) SaveCredentials(ctx context.Context, workspaceID, token string) error {
-	err := s.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(SlackCredential{TeamID: workspaceID, Token: token}).Error
+	err := s.db.WithContext(ctx).Clauses(clause.OnConflict{UpdateAll: true}).Create(&SlackCredential{TeamID: workspaceID, Token: token}).Error
 	if err != nil {
 		return fmt.Errorf("insert credentials: %w", err)
 	}
@@ -64,7 +64,7 @@ func (s SlackCredentialPostgres) GetCredentials(ctx context.Context, workspaceID
 
 	// Fallback to DB
 	creds := &SlackCredential{}
-	if err := s.db.Where("team_id = ?", workspaceID).First(*creds).Error; err != nil {
+	if err := s.db.Where("team_id = ?", workspaceID).First(creds).Error; err != nil {
 		return "", fmt.Errorf("could not find credentials: %w", err)
 	}
 	// Populate cache for subsequent queries
