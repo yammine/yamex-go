@@ -25,12 +25,12 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	viper.AutomaticEnv()
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal().Err(err).Str("service", ServiceName).Msgf("cannot start %s", ServiceName)
-	}
+	//viper.SetConfigName("config")
+	//viper.SetConfigType("yml")
+	//viper.AddConfigPath(".")
+	//if err := viper.ReadInConfig(); err != nil {
+	//	log.Fatal().Err(err).Str("service", ServiceName).Msgf("cannot start %s", ServiceName)
+	//}
 
 	// Playing with postgres adapter
 	repo := adapter.NewPostgresRepository(viper.GetString("POSTGRES_DSN"))
