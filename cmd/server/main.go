@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +26,7 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	viper.AutomaticEnv()
+	viper.SetDefault("PORT", 3000)
 	//viper.SetConfigName("config")
 	//viper.SetConfigType("yml")
 	//viper.AddConfigPath(".")
@@ -42,7 +44,7 @@ func main() {
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
 
 	srv := &http.Server{
-		Addr:         "0.0.0.0:3000",
+		Addr:         fmt.Sprintf(":%d", viper.GetInt("PORT")),
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
