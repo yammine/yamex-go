@@ -136,6 +136,10 @@ func (p PostgresRepository) SendCurrency(ctx context.Context, in *app.SendCurren
 	})
 }
 
+func (p PostgresRepository) SaveCredentials(ctx context.Context, workspaceID, token string) error {
+	panic("implement me")
+}
+
 var _ app.Repository = (*PostgresRepository)(nil)
 
 func getUserExclusive(tx *gorm.DB, id uint) (*domain.User, error) {

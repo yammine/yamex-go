@@ -44,6 +44,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
+	router.HandleFunc("/slack/oauth", OAuthRedirectHandler(repo))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", viper.GetInt("PORT")),
