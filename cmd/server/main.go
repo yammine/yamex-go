@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/slack-go/slack"
 
 	"github.com/rs/zerolog"
@@ -86,7 +88,7 @@ func oAuthRedirectHandler(repo app.Repository) func(w http.ResponseWriter, r *ht
 
 		client := &http.Client{Timeout: 5 * time.Second}
 		oauthResp, err := slack.GetOAuthV2Response(client, viper.GetString("SLACK_CLIENT_ID"), viper.GetString("SLACK_CLIENT_SECRET"), code, viper.GetString("SLACK_REDIRECT_URI"))
-		fmt.Println(*oauthResp)
+		spew.Dump(oauthResp)
 		if err != nil {
 			// TODO: something
 		}
