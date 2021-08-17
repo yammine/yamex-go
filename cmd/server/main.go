@@ -23,7 +23,9 @@ import (
 const ServiceName = "yamex"
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	if !viper.IsSet("PRODUCTION") {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 
 	viper.AutomaticEnv()
 	viper.SetDefault("PORT", 3000)
