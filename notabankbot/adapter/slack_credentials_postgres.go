@@ -53,10 +53,11 @@ func (s SlackCredentialPostgres) SaveCredentials(ctx context.Context, workspaceI
 
 func (s SlackCredentialPostgres) GetCredentials(ctx context.Context, workspaceID string) (string, error) {
 	s.RLock()
-	defer s.RUnlock()
 
 	// Check cache first
 	token, ok := s.cache[workspaceID]
+	// Explicitly release read lock
+	s.RUnlock()
 	// That's a hit, return the token
 	if ok {
 		return token, nil
