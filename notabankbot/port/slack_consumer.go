@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
+	"unicode"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -37,21 +39,6 @@ const (
 	GrantCurrencyCmd = "GrantCurrency"
 	GetBalanceForCmd = "GetBalanceFor"
 	SendCurrencyCmd  = "SendCurrency"
-
-	// Responses
-
-	GenericResponse      = "I don't understand what you're asking me :face_with_head_bandage:"
-	GenericErrorResponse = "I seem to be experiencing an unexpected error :robot_face:"
-
-	AlreadyGrantedCurrency = "Oops! Looks like you've already granted currency recently. Try again later :simple_smile:"
-
-	// Capture Keys
-
-	ckRecipientID = "recipient_id"
-	ckCurrency    = "currency"
-	ckNote        = "note"
-	ckCommand     = "command"
-	ckAmount      = "amount"
 )
 
 type SlackConsumer struct {
@@ -122,6 +109,7 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 
 		if eventsAPIEvent.Type == slackevents.CallbackEvent {
 			innerEvent := eventsAPIEvent.InnerEvent
+
 			switch ev := innerEvent.Data.(type) {
 			case *slackevents.AppMentionEvent:
 				log.Debug().Dict(
@@ -131,10 +119,11 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 						Str("user", ev.User).
 						Str("text", ev.Text),
 				).Msg("event received")
+
 				response := s.ProcessAppMention(ctx, &BotMention{
 					Platform: "slack",
 					UserID:   ev.User,
-					Text:     ev.Text,
+					Text:     replaceWhitespace(ev.Text),
 				})
 
 				go s.reply(ev, response)
@@ -150,6 +139,25 @@ func (s SlackConsumer) reply(ev *slackevents.AppMentionEvent, response BotRespon
 	s.client.SendMessage(
 		ev.Channel,
 		slack.MsgOptionText(response.Text, false),
-		slack.MsgOptionTS(ev.TimeStamp),
+		slack.MsgOptionTS(messageTS(ev)),
 	)
+}
+
+func messageTS(ev *slackevents.AppMentionEvent) string {
+	// If ev.ThreadTimeStamp is set then use that (reply in thread mention was made).
+	// Else use TimeStamp (start new threaded reply)
+	if ev.ThreadTimeStamp != "" {
+		return ev.ThreadTimeStamp
+	} else {
+		return ev.TimeStamp
+	}
+}
+
+func replaceWhitespace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return ' '
+		}
+		return r
+	}, s)
 }

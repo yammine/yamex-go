@@ -21,6 +21,25 @@ import (
 	"github.com/yammine/yamex-go/notabankbot/app"
 )
 
+const (
+	// Responses
+
+	GenericResponse      = "I don't understand what you're asking me :face_with_head_bandage:"
+	GenericErrorResponse = "I seem to be experiencing an unexpected error :robot_face:"
+
+	AlreadyGrantedCurrencyResponse = "Oops! Looks like you've already granted currency recently. Try again later :simple_smile:"
+	NoNegativeAmountsResponse      = "You can't send a negative amount silly :clown_face:"
+	NotEnoughCurrencyResponse      = "You don't have enough %s to do that :cry:"
+
+	// Capture Keys
+	// TODO: Define a concrete type for captures, we shouldn't be passing around an arbitrary map.
+	ckRecipientID = "recipient_id"
+	ckCurrency    = "currency"
+	ckNote        = "note"
+	ckCommand     = "command"
+	ckAmount      = "amount"
+)
+
 type BotMention struct {
 	Platform string
 	UserID   string
@@ -69,10 +88,11 @@ func (s SlackConsumer) processGetBalanceQuery(ctx context.Context, slackUserID s
 
 	accountsTable := renderAccounts(accounts)
 
-	return fmt.Sprintf("Here are your account balances:\n```%s```", accountsTable)
+	return fmt.Sprintf("Account balances for <@%s>:\n```%s```", slackUserID, accountsTable)
 }
 
 func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captures map[string]string) string {
+	// TODO: Extract all handlers to their own files for better code organization.
 	command := captures[ckCommand]
 
 	for name, expression := range s.subCommandExpressions {
@@ -99,7 +119,7 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 				if err != nil {
 					log.Error().Object("context", m).Err(err).Msg("Error granting currency")
 					if errors.Is(err, domain.ErrAlreadyGranted) {
-						return AlreadyGrantedCurrency
+						return AlreadyGrantedCurrencyResponse
 					}
 					return GenericErrorResponse
 				}
@@ -123,9 +143,21 @@ func (s SlackConsumer) processCommand(ctx context.Context, m *BotMention, captur
 
 				if err != nil {
 					log.Error().Err(err).Object("context", m).Str("amount", amount.String()).Msg("Error during transfer")
+					if errors.Is(err, domain.ErrAmountCannotBeNegative) {
+						return NoNegativeAmountsResponse
+					}
+					if errors.Is(err, domain.ErrInsufficientBalance) {
+						return fmt.Sprintf(NotEnoughCurrencyResponse, captures[ckCurrency])
+					}
 					return GenericErrorResponse
 				}
-				return fmt.Sprintf("Success! Sent %s `%s` to %s for reason: `%s`.\n\nThanks for using yamex!", amount.String(), captures[ckCurrency], captures[ckRecipientID], strings.TrimSpace(captures[ckNote]))
+				return fmt.Sprintf(
+					"Success! Sent %s `%s` to %s for reason: `%s`.\n\nThanks for using yamex!",
+					amount.String(),
+					captures[ckCurrency],
+					captures[ckRecipientID],
+					strings.TrimSpace(captures[ckNote]),
+				)
 			default:
 				log.Error().Object("context", m).Str("name", name).Str("command", command).Msg("Could not match command")
 				return GenericResponse
