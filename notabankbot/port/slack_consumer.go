@@ -42,14 +42,14 @@ const (
 )
 
 type SlackConsumer struct {
-	app    *app.Application
-	client *slack.Client
+	app         *app.Application
+	credentials SlackCredentialStore
 
 	expressions           map[string]*regexp.Regexp
 	subCommandExpressions map[string]*regexp.Regexp
 }
 
-func NewSlackConsumer(app *app.Application) *SlackConsumer {
+func NewSlackConsumer(app *app.Application, credentialRepo SlackCredentialStore) *SlackConsumer {
 	top := map[string]*regexp.Regexp{
 		CommandCmd:    regexp.MustCompile(CommandExpression),
 		GetBalanceCmd: regexp.MustCompile(GetBalanceExpression),
@@ -63,7 +63,7 @@ func NewSlackConsumer(app *app.Application) *SlackConsumer {
 
 	return &SlackConsumer{
 		app:                   app,
-		client:                slack.New(viper.GetString("BOT_USER_OAUTH_TOKEN")),
+		credentials:           credentialRepo,
 		expressions:           top,
 		subCommandExpressions: sub,
 	}
@@ -125,8 +125,15 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 					UserID:   ev.User,
 					Text:     replaceWhitespace(ev.Text),
 				})
-
-				go s.reply(ev, response)
+				// TODO: Move this to somewhere else
+				token, err := s.credentials.GetCredentials(ctx, eventsAPIEvent.TeamID)
+				if err != nil {
+					log.Error().Err(err).Msg("Failed to get slack credentials")
+					w.WriteHeader(500)
+					return
+				}
+				client := slack.New(token)
+				go s.reply(client, ev, response)
 
 			default:
 
@@ -135,8 +142,8 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s SlackConsumer) reply(ev *slackevents.AppMentionEvent, response BotResponse) {
-	s.client.SendMessage(
+func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEvent, response BotResponse) {
+	client.SendMessage(
 		ev.Channel,
 		slack.MsgOptionText(response.Text, false),
 		slack.MsgOptionTS(messageTS(ev)),

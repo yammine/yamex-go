@@ -40,15 +40,19 @@ func main() {
 		log.Error().Err(err).Msg("viper couldn't find config.yml, falling back to ENV config")
 	}
 
-	// Playing with postgres adapter
+	// App repo
 	repo := adapter.NewPostgresRepository(viper.GetString("POSTGRES_DSN"))
 	repo.Migrate()
+	// Slack credentials repo
+	slackCredentialsStore := adapter.NewSlackCredentialPostgresRepository(viper.GetString("POSTGRES_DSN"))
+	slackCredentialsStore.Migrate()
+
 	application := app.NewApplication(repo)
-	slackConsumer := port.NewSlackConsumer(application)
+	slackConsumer := port.NewSlackConsumer(application, slackCredentialsStore)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
-	router.HandleFunc("/slack/oauth", oAuthRedirectHandler(repo))
+	router.HandleFunc("/slack/oauth", oAuthRedirectHandler(slackCredentialsStore))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", viper.GetInt("PORT")),
@@ -82,7 +86,7 @@ func main() {
 	os.Exit(0)
 }
 
-func oAuthRedirectHandler(repo app.Repository) func(w http.ResponseWriter, r *http.Request) {
+func oAuthRedirectHandler(repo port.SlackCredentialStore) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		log.Info().Str("code", code).Msg("Code from query params")

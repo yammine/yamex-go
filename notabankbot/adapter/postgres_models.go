@@ -1,6 +1,15 @@
 package adapter
 
+import "gorm.io/gorm"
+
 // TODO: Use adapter defined models for marshalling/unmarshalling DB values.
+
+type SlackCredential struct {
+	gorm.Model
+
+	TeamID string `gorm:"uniqueIndex"`
+	Token  string
+}
 
 //
 //import (

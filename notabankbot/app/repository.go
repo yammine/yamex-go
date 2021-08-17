@@ -16,8 +16,6 @@ type GrantFunc = func(ctx context.Context, in *GrantCurrencyFuncIn) (*GrantCurre
 type SendFunc = func(ctx context.Context, in *SendCurrencyFuncIn) (*SendCurrencyFuncOut, error)
 
 type Repository interface {
-	SaveCredentials(ctx context.Context, workspaceID, token string) error
-
 	GrantCurrency(ctx context.Context, in *GrantCurrencyInput, grantFn GrantFunc) (*domain.Grant, error)
 	SendCurrency(ctx context.Context, in *SendCurrencyInput, sendFn SendFunc) error
 
