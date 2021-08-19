@@ -3,6 +3,7 @@ package port
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -80,6 +81,8 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 					slack.NewPlainTextInputBlockElement(slack.NewTextBlockObject("plain_text_input", "", true, true), "submit-feedback"),
 				)
 				r.Blocks = append(r.Blocks, inputBlock)
+				b, _ := json.Marshal(r.Blocks)
+				fmt.Println(string(b))
 			}
 
 			return r
