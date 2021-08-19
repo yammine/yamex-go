@@ -8,17 +8,15 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/shopspring/decimal"
-
-	"github.com/rs/zerolog"
-
-	"github.com/yammine/yamex-go/notabankbot/domain"
-
 	"github.com/olekukonko/tablewriter"
+	"github.com/rs/zerolog"
 	_ "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/shopspring/decimal"
+	"github.com/slack-go/slack"
 
 	"github.com/yammine/yamex-go/notabankbot/app"
+	"github.com/yammine/yamex-go/notabankbot/domain"
 )
 
 const (
@@ -53,25 +51,34 @@ func (b BotMention) MarshalZerologObject(e *zerolog.Event) {
 var _ zerolog.LogObjectMarshaler = (*BotMention)(nil)
 
 type BotResponse struct {
-	Text string
+	Text   string
+	Blocks []slack.Block
 }
 
 func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) BotResponse {
 	//botId := viper.GetString("BOT_USER_ID")
+	r := BotResponse{}
 
 	for name, expression := range s.expressions {
 		if expression.MatchString(m.Text) {
 			captures := extractNamedCaptures(expression, m.Text)
-			// Do other processing.
-			var response string
+
 			switch name {
 			case CommandCmd:
-				response = s.processCommand(ctx, m, captures)
+				r.Text = s.processCommand(ctx, m, captures)
 			case GetBalanceCmd:
-				response = s.processGetBalanceQuery(ctx, m.UserID)
+				r.Text = s.processGetBalanceQuery(ctx, m.UserID)
+			case FeedbackCmd:
+				r.Text = "Feature request? Bug found? Please share your feedback in the text box below."
+				block := slack.NewInputBlock(
+					"feedback-input",
+					slack.NewTextBlockObject("plain_text", "Feedback", true, true),
+					slack.NewPlainTextInputBlockElement(&slack.TextBlockObject{}, "submit-feedback"),
+				)
+				r.Blocks = append(r.Blocks, block)
 			}
 
-			return BotResponse{Text: response}
+			return r
 		}
 	}
 

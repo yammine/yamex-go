@@ -22,6 +22,7 @@ const (
 
 	CommandExpression    = "(?P<bot_id><@[A-Z0-9]{11}>)(?P<command>.+)(?P<recipient_id><@[A-Z0-9]{11}>)(?P<note>.*)"
 	GetBalanceExpression = "(?P<bot_id><@[A-Z0-9]{11}>)[[:space:]](balance|my[[:space:]]balance)"
+	FeedbackExpression   = "(?P<bot_id><@[A-Z0-9]{11}>)[[:space:]]+feedback.*"
 
 	// Sub-command expressions
 
@@ -33,6 +34,7 @@ const (
 
 	GetBalanceCmd = "GetBalance"
 	CommandCmd    = "Command"
+	FeedbackCmd   = "Feedback"
 
 	// Sub-command Names
 
@@ -53,6 +55,7 @@ func NewSlackConsumer(app *app.Application, credentialRepo SlackCredentialStore)
 	top := map[string]*regexp.Regexp{
 		CommandCmd:    regexp.MustCompile(CommandExpression),
 		GetBalanceCmd: regexp.MustCompile(GetBalanceExpression),
+		FeedbackCmd:   regexp.MustCompile(FeedbackExpression),
 	}
 
 	sub := map[string]*regexp.Regexp{
@@ -147,6 +150,7 @@ func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEve
 		ev.Channel,
 		slack.MsgOptionText(response.Text, false),
 		slack.MsgOptionTS(messageTS(ev)),
+		slack.MsgOptionBlocks(response.Blocks...),
 	)
 }
 
