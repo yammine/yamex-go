@@ -137,7 +137,7 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(500)
 					return
 				}
-				client := slack.New(token, slack.OptionLog(stdlog.New(os.Stderr, "slack-client", stdlog.LstdFlags)))
+				client := slack.New(token, slack.OptionLog(stdlog.New(os.Stderr, "slack-client", stdlog.LstdFlags)), slack.OptionDebug(true))
 				go s.reply(client, ev, response)
 
 			default:
