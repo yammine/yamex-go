@@ -69,13 +69,17 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 			case GetBalanceCmd:
 				r.Text = s.processGetBalanceQuery(ctx, m.UserID)
 			case FeedbackCmd:
-				r.Text = "Feature request? Bug found? Please share your feedback in the text box below."
-				block := slack.NewInputBlock(
-					"feedback-input",
-					slack.NewTextBlockObject("plain_text", "Feedback", true, true),
-					slack.NewPlainTextInputBlockElement(&slack.TextBlockObject{}, "submit-feedback"),
+				contextBlock := slack.NewContextBlock(
+					"feedback-context",
+					slack.NewTextBlockObject(slack.PlainTextType, "Feature request? Bug report? Please share your feedback below :heart:", true, true),
 				)
-				r.Blocks = append(r.Blocks, block)
+				r.Blocks = append(r.Blocks, contextBlock)
+				inputBlock := slack.NewInputBlock(
+					"feedback-input",
+					slack.NewTextBlockObject(slack.PlainTextType, "Feedback", true, true),
+					slack.NewPlainTextInputBlockElement(slack.NewTextBlockObject("plain_text_input", "", true, true), "submit-feedback"),
+				)
+				r.Blocks = append(r.Blocks, inputBlock)
 			}
 
 			return r
