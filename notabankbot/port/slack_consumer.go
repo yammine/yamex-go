@@ -146,12 +146,15 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEvent, response BotResponse) {
-	client.SendMessage(
+	_, _, _, err := client.SendMessage(
 		ev.Channel,
 		slack.MsgOptionText(response.Text, false),
 		slack.MsgOptionTS(messageTS(ev)),
 		slack.MsgOptionBlocks(response.Blocks...),
 	)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to send response")
+	}
 }
 
 func messageTS(ev *slackevents.AppMentionEvent) string {
