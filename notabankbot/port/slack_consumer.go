@@ -3,7 +3,9 @@ package port
 import (
 	"encoding/json"
 	"io/ioutil"
+	stdlog "log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"unicode"
@@ -135,7 +137,7 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(500)
 					return
 				}
-				client := slack.New(token)
+				client := slack.New(token, slack.OptionLog(stdlog.New(os.Stderr, "slack-client", stdlog.LstdFlags)))
 				go s.reply(client, ev, response)
 
 			default:
