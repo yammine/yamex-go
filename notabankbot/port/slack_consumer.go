@@ -140,8 +140,10 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 				client := slack.New(token, slack.OptionLog(stdlog.New(os.Stderr, "slack-client", stdlog.LstdFlags)), slack.OptionDebug(true))
 				go s.reply(client, ev, response)
 
+			case *slackevents.MessageAction:
+				log.Debug().Msgf("Received message action: %+v", ev)
 			default:
-
+				log.Debug().Msgf("Unhandled message type: %+v", ev)
 			}
 		}
 	}
