@@ -3,7 +3,6 @@ package port
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -97,9 +96,6 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 					},
 				}
 				r.Blocks = append(r.Blocks, inputBlock)
-
-				b, _ := json.Marshal(r.Blocks)
-				fmt.Println("JSON blocks: ", string(b))
 			}
 
 			return r
