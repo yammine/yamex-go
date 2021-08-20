@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -55,9 +53,7 @@ func main() {
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
 	router.HandleFunc("/slack/interaction", func(writer http.ResponseWriter, request *http.Request) {
 		b, _ := io.ReadAll(request.Body)
-		var buf bytes.Buffer
-		json.Indent(&buf, b, "", "\t")
-		fmt.Println("Action payload: ", buf.String())
+		fmt.Println("Action payload: ", string(b))
 
 		writer.WriteHeader(200)
 	})
