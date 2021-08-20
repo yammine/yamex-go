@@ -89,7 +89,7 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 		if err := json.Unmarshal(payload, &res); err != nil {
 			w.WriteHeader(500)
 			fmt.Println("error unmarshalling", err)
-			fmt.Println("raw", string(body))
+			fmt.Println("raw", string(payload))
 			return
 		}
 
