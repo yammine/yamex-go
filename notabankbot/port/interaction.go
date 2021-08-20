@@ -90,6 +90,7 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 			w.WriteHeader(500)
 			fmt.Println("error unmarshalling", err)
 			fmt.Println("raw", string(payload))
+			fmt.Println("form", r.Form)
 			return
 		}
 
