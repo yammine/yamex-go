@@ -1,17 +1,24 @@
 package port
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/yammine/yamex-go/notabankbot/app"
+
+	"github.com/rs/zerolog/log"
+
 	"github.com/slack-go/slack"
 	"github.com/spf13/viper"
 )
 
 type SlackInteractor struct {
+	app         *app.Application
+	credentials SlackCredentialStore
 }
 
 type Channel struct {
@@ -48,8 +55,11 @@ type SlackInteraction struct {
 	Actions []*Action `json:"actions"`
 }
 
-func NewSlackInteractor() *SlackInteractor {
-	return &SlackInteractor{}
+func NewSlackInteractor(credentials SlackCredentialStore, app *app.Application) *SlackInteractor {
+	return &SlackInteractor{
+		app:         app,
+		credentials: credentials,
+	}
 }
 
 func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) {
@@ -94,11 +104,43 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 
 		// Business logic
 		fmt.Printf("SlackInteraction: %+v\n", res)
+		if err := s.ProcessInteraction(res); err != nil {
+			fmt.Println("failed to process actions", err)
+			w.WriteHeader(500)
+			return
+		}
 
 		w.WriteHeader(200)
 	}
 }
 
 func (s SlackInteractor) ProcessInteraction(i *SlackInteraction) error {
+	// setup
+	token, err := s.credentials.GetCredentials(context.Background(), i.Team.ID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get slack credentials")
+		return err
+	}
+	client := slack.New(token)
+	var response string
+
+	// Process value
+
+	// Reply
+	s.respondToAction(client, i, response)
+
 	return nil
+}
+
+func (s SlackInteractor) respondToAction(client *slack.Client, i *SlackInteraction, response string) {
+	_, _, _, err := client.SendMessage(
+		i.Channel.ID,
+		slack.MsgOptionText(response, false),
+		slack.MsgOptionResponseURL(i.ResponseURL, "ephemeral"),
+		slack.MsgOptionReplaceOriginal(i.ResponseURL),
+	)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to respond to action")
+	}
 }

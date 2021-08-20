@@ -47,7 +47,7 @@ func main() {
 
 	application := app.NewApplication(repo)
 	slackConsumer := port.NewSlackConsumer(application, slackCredentialsStore)
-	slackInteractor := port.NewSlackInteractor()
+	slackInteractor := port.NewSlackInteractor(slackCredentialsStore, application)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
