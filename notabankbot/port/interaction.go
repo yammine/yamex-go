@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/slack-go/slack"
 	"github.com/spf13/viper"
@@ -53,11 +54,6 @@ func NewSlackInteractor() *SlackInteractor {
 
 func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
-			fmt.Println("error parsing form")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		// Read the body & check contents are actually from Slack
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -79,17 +75,25 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
+		// Parse form data so we can eventaully reach that json payload
+		form, err := url.ParseQuery(string(body))
+		if err != nil {
+			fmt.Println("couldn't parse form body")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		// Parse payload into our struct
 		type wrapper struct {
 			Payload []*SlackInteraction `json:"payload"`
 		}
 		res := &wrapper{}
-		payload := []byte(r.Form.Get("payload"))
+		payload := []byte(form.Get("payload"))
 		if err := json.Unmarshal(payload, &res); err != nil {
 			w.WriteHeader(500)
 			fmt.Println("error unmarshalling", err)
 			fmt.Println("raw", string(payload))
-			fmt.Println("form", r.Form)
+			fmt.Println("form", form)
 			return
 		}
 
