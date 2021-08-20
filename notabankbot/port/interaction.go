@@ -103,12 +103,9 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 		}
 
 		// Business logic
-		fmt.Printf("SlackInteraction: %+v\n", res)
-		if err := s.ProcessInteraction(res); err != nil {
-			fmt.Println("failed to process actions", err)
-			w.WriteHeader(500)
-			return
-		}
+		go func() {
+			s.ProcessInteraction(res)
+		}()
 
 		w.WriteHeader(200)
 	}
