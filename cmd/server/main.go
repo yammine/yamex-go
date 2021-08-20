@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -52,8 +51,9 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
 	router.HandleFunc("/slack/interaction", func(writer http.ResponseWriter, request *http.Request) {
-		b, _ := io.ReadAll(request.Body)
-		fmt.Println("Action payload: ", string(b))
+		request.ParseForm()
+
+		fmt.Println("Action payload: ", request.Form)
 
 		writer.WriteHeader(200)
 	})
