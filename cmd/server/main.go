@@ -74,8 +74,9 @@ func main() {
 			return
 		}
 
-		actionEvent, err := slackevents.ParseActionEvent(string(body))
+		actionEvent, err := slackevents.ParseActionEvent(string(body), slackevents.OptionNoVerifyToken())
 		if err != nil {
+			fmt.Println("error parsing event", err)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
