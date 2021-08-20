@@ -151,7 +151,6 @@ func (s SlackConsumer) Handler() func(w http.ResponseWriter, r *http.Request) {
 
 func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEvent, response BotResponse) {
 	opts := make([]slack.MsgOption, 0)
-	opts = append(opts, slack.MsgOptionTS(messageTS(ev)))
 	if response.Text != "" {
 		opts = append(opts, slack.MsgOptionText(response.Text, false))
 	}
@@ -160,6 +159,9 @@ func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEve
 	}
 	if response.Ephemeral {
 		opts = append(opts, slack.MsgOptionPostEphemeral(ev.User))
+	} else {
+		// We only create threads if the message responses are not ephemeral
+		opts = append(opts, slack.MsgOptionTS(messageTS(ev)))
 	}
 
 	_, _, _, err := client.SendMessage(
