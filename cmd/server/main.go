@@ -65,6 +65,7 @@ func main() {
 			return
 		}
 		if _, err := sv.Write(body); err != nil {
+			fmt.Println("error verifying request body")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -72,13 +73,14 @@ func main() {
 			writer.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		event, err := slackevents.ParseEvent(body, slackevents.OptionNoVerifyToken())
+
+		actionEvent, err := slackevents.ParseActionEvent(string(body))
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Println("interaction event: ", event)
+		fmt.Println("action event: ", actionEvent)
 
 		writer.WriteHeader(200)
 	})
