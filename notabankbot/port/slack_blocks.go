@@ -9,14 +9,14 @@ const (
 
 type Block struct {
 	ID             string `json:"block_id,omitempty"`
-	Type           string
-	DispatchAction bool `json:",omitempty"`
+	Type           string `json:"type"`
+	DispatchAction bool   `json:"dispatch_action,omitempty"`
 
 	// Sub-structs
-	Label *Element `json:",omitempty"`
+	Label *Element `json:"label,omitempty"`
 
-	Element  *Element   `json:",omitempty"`
-	Elements []*Element `json:",omitempty"`
+	Element  *Element   `json:"element,omitempty"`
+	Elements []*Element `json:"elements,omitempty"`
 }
 
 func (b Block) BlockType() slack.MessageBlockType {
@@ -24,16 +24,16 @@ func (b Block) BlockType() slack.MessageBlockType {
 }
 
 type Element struct {
-	ActionID string `json:",omitempty"`
-	Type     string
+	ActionID string `json:"action_id,omitempty"`
+	Type     string `json:"type"`
 
 	// Element properties for TextInput
-	Text         string
-	Emoji        bool   `json:",omitempty"`
-	InitialValue string `json:",omitempty"`
-	Multiline    bool
-	MinLength    int `json:",omitempty"`
-	MaxLength    int `json:",omitempty"`
+	Text         string `json:"text"`
+	Emoji        bool   `json:"emoji,omitempty"`
+	InitialValue string `json:"initial_value,omitempty"`
+	Multiline    bool   `json:"multiline"`
+	MinLength    int    `json:"min_length,omitempty"`
+	MaxLength    int    `json:"max_length,omitempty"`
 }
 
 func (e Element) ElementType() slack.MessageElementType {
