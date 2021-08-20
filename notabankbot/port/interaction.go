@@ -93,7 +93,7 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 		}
 
 		// Business logic
-		fmt.Println("interaction", res)
+		fmt.Printf("SlackInteraction: %+v\n", res)
 
 		w.WriteHeader(200)
 	}
