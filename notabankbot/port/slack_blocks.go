@@ -28,10 +28,10 @@ type Element struct {
 	Type     string `json:"type"`
 
 	// Element properties for TextInput
-	Text         string `json:"text"`
+	Text         string `json:"text,omitempty"`
 	Emoji        bool   `json:"emoji,omitempty"`
 	InitialValue string `json:"initial_value,omitempty"`
-	Multiline    bool   `json:"multiline"`
+	Multiline    bool   `json:"multiline,omitempty"`
 	MinLength    int    `json:"min_length,omitempty"`
 	MaxLength    int    `json:"max_length,omitempty"`
 }

@@ -72,11 +72,13 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 			case FeedbackCmd:
 				contextBlock := &Block{
 					ID:   "feedback-context",
-					Type: PlainText,
-					Element: &Element{
-						Type:  PlainText,
-						Text:  "Feature request? Bug report? Please share your feedback below :heart:",
-						Emoji: true,
+					Type: "context",
+					Elements: []*Element{
+						{
+							Type:  PlainText,
+							Text:  "Feature request? Bug report? Please share your feedback below :heart:",
+							Emoji: true,
+						},
 					},
 				}
 				r.Blocks = append(r.Blocks, contextBlock)
