@@ -53,6 +53,11 @@ func NewSlackInteractor() *SlackInteractor {
 
 func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			fmt.Println("error parsing form")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		// Read the body & check contents are actually from Slack
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -71,12 +76,6 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 		}
 		if err := sv.Ensure(); err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		if err := r.ParseForm(); err != nil {
-			fmt.Println("error parsing form")
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
