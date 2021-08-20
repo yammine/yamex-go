@@ -111,3 +111,12 @@ func (a Application) GetBalance(ctx context.Context, in *GetBalanceInput) ([]*do
 	}
 	return a.repo.GetAccountsForUser(ctx, user.ID)
 }
+
+func (a Application) SaveFeedback(ctx context.Context, slackUserID, feedback string) error {
+	user, err := a.repo.GetOrCreateUserBySlackID(ctx, slackUserID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	return a.repo.SaveFeedback(ctx, user, feedback)
+}

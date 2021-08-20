@@ -29,7 +29,7 @@ type PostgresRepository struct {
 }
 
 func (p PostgresRepository) Migrate() error {
-	return p.DB.AutoMigrate(&domain.User{}, &domain.Account{}, &domain.Movement{}, &domain.Grant{})
+	return p.DB.AutoMigrate(&domain.User{}, &domain.Account{}, &domain.Movement{}, &domain.Grant{}, &Feedback{})
 }
 
 func (p PostgresRepository) GetAccountsForUser(ctx context.Context, id uint) ([]*domain.Account, error) {
@@ -134,6 +134,17 @@ func (p PostgresRepository) SendCurrency(ctx context.Context, in *app.SendCurren
 
 		return nil
 	})
+}
+
+func (p PostgresRepository) SaveFeedback(ctx context.Context, user *domain.User, feedback string) error {
+	f := Feedback{
+		UserID: user.ID,
+		Text:   feedback,
+	}
+	if err := p.DB.WithContext(ctx).Create(&f).Error; err != nil {
+		return fmt.Errorf("failed to insert feedback: %w", err)
+	}
+	return nil
 }
 
 var _ app.Repository = (*PostgresRepository)(nil)

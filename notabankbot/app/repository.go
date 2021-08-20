@@ -21,6 +21,8 @@ type Repository interface {
 
 	GetOrCreateUserBySlackID(ctx context.Context, slackUserId string) (*domain.User, error)
 	GetAccountsForUser(ctx context.Context, id uint) ([]*domain.Account, error)
+
+	SaveFeedback(ctx context.Context, user *domain.User, feedback string) error
 }
 
 // GrantCurrency

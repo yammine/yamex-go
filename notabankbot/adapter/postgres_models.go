@@ -11,6 +11,13 @@ type SlackCredential struct {
 	Token  string
 }
 
+type Feedback struct {
+	gorm.Model
+
+	UserID uint
+	Text   string
+}
+
 //
 //import (
 //	"time"

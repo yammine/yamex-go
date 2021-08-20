@@ -124,6 +124,7 @@ func (s SlackInteractor) ProcessInteraction(i *SlackInteraction) error {
 	// Process value
 	for j := range i.Actions {
 		action := i.Actions[j]
+		s.app.SaveFeedback(context.Background(), i.User.ID, action.Value)
 		log.Debug().Msgf("Action: %+v", action)
 	}
 
