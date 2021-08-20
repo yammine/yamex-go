@@ -125,6 +125,10 @@ func (s SlackInteractor) ProcessInteraction(i *SlackInteraction) error {
 	var response string
 
 	// Process value
+	for j := range i.Actions {
+		action := i.Actions[j]
+		log.Debug().Msgf("Action: %+v", action)
+	}
 
 	// Reply
 	s.respondToAction(client, i, response)
