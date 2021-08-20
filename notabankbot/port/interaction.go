@@ -86,6 +86,7 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 		// Parse payload into our struct
 		res := make([]*SlackInteraction, 0)
 		payload := []byte(form.Get("payload"))
+		fmt.Println("raw payload", string(payload))
 		if err := json.Unmarshal(payload, &res); err != nil {
 			w.WriteHeader(500)
 			fmt.Println("error unmarshalling", err)
