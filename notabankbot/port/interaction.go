@@ -127,6 +127,8 @@ func (s SlackInteractor) ProcessInteraction(i *SlackInteraction) error {
 		log.Debug().Msgf("Action: %+v", action)
 	}
 
+	response = "Thanks for the feedback!"
+
 	// Reply
 	s.respondToAction(client, i, response)
 
