@@ -118,7 +118,7 @@ func (s SlackInteractor) ProcessInteraction(i *SlackInteraction) error {
 		log.Error().Err(err).Msg("Failed to get slack credentials")
 		return err
 	}
-	client := slack.New(token)
+	client := slack.New(token, slack.OptionDebug(true))
 	var response string
 
 	// Process value
