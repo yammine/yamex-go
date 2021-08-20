@@ -70,32 +70,32 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 			case GetBalanceCmd:
 				r.Text = s.processGetBalanceQuery(ctx, m.UserID)
 			case FeedbackCmd:
-				contextBlock := slack.NewContextBlock(
-					"feedback-context",
-					&slack.TextBlockObject{
-						Type:  slack.PlainTextType,
+				contextBlock := &Block{
+					ID:   "feedback-context",
+					Type: PlainText,
+					Element: &Element{
+						Type:  PlainText,
 						Text:  "Feature request? Bug report? Please share your feedback below :heart:",
 						Emoji: true,
 					},
-				)
+				}
 				r.Blocks = append(r.Blocks, contextBlock)
-				inputBlock := slack.NewInputBlock(
-					"feedback-input",
-					&slack.TextBlockObject{
-						Type:  slack.PlainTextType,
-						Text:  "Feedback",
-						Emoji: true,
+
+				inputBlock := &Block{
+					ID:             "feedback-input",
+					Type:           "input",
+					DispatchAction: true,
+					Label: &Element{
+						Type: PlainText,
+						Text: "Feedback",
 					},
-					&slack.PlainTextInputBlockElement{
-						Type:         "plain_text_input",
-						ActionID:     "submit-feedback",
-						InitialValue: "",
-						Multiline:    true,
-						MinLength:    2,
-						MaxLength:    255,
+					Element: &Element{
+						Type:     PlainTextInput,
+						ActionID: "submit-feedback",
 					},
-				)
+				}
 				r.Blocks = append(r.Blocks, inputBlock)
+
 				b, _ := json.Marshal(r.Blocks)
 				fmt.Println("JSON blocks: ", string(b))
 			}
