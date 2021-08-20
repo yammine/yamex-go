@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/slack-go/slack/slackevents"
 
 	"github.com/slack-go/slack"
 
@@ -51,9 +54,31 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
 	router.HandleFunc("/slack/interaction", func(writer http.ResponseWriter, request *http.Request) {
-		request.ParseForm()
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		sv, err := slack.NewSecretsVerifier(request.Header, viper.GetString("SLACK_SIGNING_SECRET"))
+		if err != nil {
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if _, err := sv.Write(body); err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if err := sv.Ensure(); err != nil {
+			writer.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		event, err := slackevents.ParseEvent(body, slackevents.OptionNoVerifyToken())
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-		fmt.Println("Action payload: ", request.Form)
+		fmt.Println("interaction event: ", event)
 
 		writer.WriteHeader(200)
 	})
