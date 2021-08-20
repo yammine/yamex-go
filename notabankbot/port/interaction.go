@@ -74,12 +74,19 @@ func (s SlackInteractor) Handler() func(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
+		if err := r.ParseForm(); err != nil {
+			fmt.Println("error parsing form")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		// Parse payload into our struct
 		type wrapper struct {
 			Payload []*SlackInteraction `json:"payload"`
 		}
 		res := &wrapper{}
-		if err := json.Unmarshal(body, &res); err != nil {
+		payload := []byte(r.Form.Get("payload"))
+		if err := json.Unmarshal(payload, &res); err != nil {
 			w.WriteHeader(500)
 			fmt.Println("error unmarshalling", err)
 			fmt.Println("raw", string(body))
