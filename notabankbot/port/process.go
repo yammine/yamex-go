@@ -51,8 +51,9 @@ func (b BotMention) MarshalZerologObject(e *zerolog.Event) {
 var _ zerolog.LogObjectMarshaler = (*BotMention)(nil)
 
 type BotResponse struct {
-	Text   string
-	Blocks []slack.Block
+	Text      string
+	Blocks    []slack.Block
+	Ephemeral bool
 }
 
 func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) BotResponse {
@@ -96,6 +97,7 @@ func (s SlackConsumer) ProcessAppMention(ctx context.Context, m *BotMention) Bot
 					},
 				}
 				r.Blocks = append(r.Blocks, inputBlock)
+				r.Ephemeral = true
 			}
 
 			return r

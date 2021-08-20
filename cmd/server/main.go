@@ -3,13 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/slack-go/slack/slackevents"
 
 	"github.com/slack-go/slack"
 
@@ -50,41 +47,11 @@ func main() {
 
 	application := app.NewApplication(repo)
 	slackConsumer := port.NewSlackConsumer(application, slackCredentialsStore)
+	slackInteractor := port.NewSlackInteractor()
 
 	router := mux.NewRouter()
 	router.HandleFunc("/slack/events", slackConsumer.Handler())
-	router.HandleFunc("/slack/interaction", func(writer http.ResponseWriter, request *http.Request) {
-		body, err := io.ReadAll(request.Body)
-		if err != nil {
-			writer.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		sv, err := slack.NewSecretsVerifier(request.Header, viper.GetString("SLACK_SIGNING_SECRET"))
-		if err != nil {
-			writer.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if _, err := sv.Write(body); err != nil {
-			fmt.Println("error verifying request body")
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if err := sv.Ensure(); err != nil {
-			writer.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		actionEvent, err := slackevents.ParseActionEvent(string(body), slackevents.OptionNoVerifyToken())
-		if err != nil {
-			fmt.Println("error parsing event", err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Println("action event: ", actionEvent)
-
-		writer.WriteHeader(200)
-	})
+	router.HandleFunc("/slack/interaction", slackInteractor.Handler())
 	router.HandleFunc("/slack/oauth", oAuthRedirectHandler(slackCredentialsStore))
 
 	srv := &http.Server{

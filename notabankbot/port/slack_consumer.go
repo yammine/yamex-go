@@ -158,6 +158,9 @@ func (s SlackConsumer) reply(client *slack.Client, ev *slackevents.AppMentionEve
 	if len(response.Blocks) > 0 {
 		opts = append(opts, slack.MsgOptionBlocks(response.Blocks...))
 	}
+	if response.Ephemeral {
+		opts = append(opts, slack.MsgOptionPostEphemeral(ev.User))
+	}
 
 	_, _, _, err := client.SendMessage(
 		ev.Channel,
