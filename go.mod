@@ -15,7 +15,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/rs/zerolog v1.23.0 // indirect
 	github.com/shopspring/decimal v1.2.0
-	github.com/slack-go/slack v0.9.3 // indirect
+	github.com/slack-go/slack v0.9.4 // indirect
 	github.com/spf13/viper v1.8.1
 	github.com/ugorji/go v1.2.6 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
